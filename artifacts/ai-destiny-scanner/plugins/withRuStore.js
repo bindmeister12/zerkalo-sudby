@@ -162,6 +162,12 @@ function withRuStoreMainApplication(config) {
 }
 
 const withRuStore = (config, props = {}) => {
+  // Skip entire plugin when consoleAppId is not configured —
+  // avoids downloading ru.rustore Maven artifacts from vkpartner.ru
+  // on EAS Build servers where the repo may be unreachable.
+  if (!props.consoleAppId) {
+    return config;
+  }
   let cfg = config;
   cfg = withRuStoreMavenRepo(cfg);
   cfg = withRuStoreDependency(cfg);
