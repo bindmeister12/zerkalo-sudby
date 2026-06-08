@@ -7,7 +7,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "pnpm": "10",
+      "pnpm": "10.0.0",
       "android": {
         "buildType": "apk"
       },
@@ -17,7 +17,7 @@
     },
     "preview": {
       "distribution": "internal",
-      "pnpm": "10",
+      "pnpm": "10.0.0",
       "android": {
         "buildType": "apk"
       },
@@ -27,7 +27,7 @@
     },
     "production": {
       "autoIncrement": true,
-      "pnpm": "10",
+      "pnpm": "10.0.0",
       "env": {
         "EXPO_PUBLIC_DOMAIN": "unpack-app.replit.app"
       }
