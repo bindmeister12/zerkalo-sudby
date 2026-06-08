@@ -1,0 +1,23 @@
+kind = "mobile"
+previewPath = "/"
+title = "AI Destiny Scanner"
+version = "1.0.0"
+id = "artifacts/ai-destiny-scanner"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 21698
+
+[services.development]
+run = "pnpm --filter @workspace/ai-destiny-scanner run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ai-destiny-scanner", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/ai-destiny-scanner", "run", "serve" ]

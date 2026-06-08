@@ -1,0 +1,4 @@
+- [RuStore Pay SDK setup](rustore-pay.md) — consoleAppId in app.json must be filled before EAS build; product IDs are zerkalo_premium_monthly / zerkalo_premium_annual.
+- [Free scan gate](free-scan-gate.md) — FREE_SCAN_LIMIT=1 in scanning.tsx; paywall shown only when subscriptionsEnabled=true AND !isPremium AND freeScansUsed>=limit.
+- [Admin panel auth](admin-panel-auth.md) — простой JWT с role:admin, подписан тем же SESSION_SECRET, срок 24 ч; пароль в ADMIN_PASSWORD secret.
+- [Subscriptions toggle](subscriptions-toggle.md) — app_settings таблица с ключом subscriptions_enabled; mobile fetch /api/app-config при старте; default=false (выкл).

@@ -1,0 +1,878 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: destiny
+    description: AI destiny analysis
+  - name: auth
+    description: Authentication and accounts
+  - name: profile
+    description: User profile, personal data, and consent (152-FZ)
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /destiny/analyze:
+    post:
+      operationId: analyzeDestiny
+      tags: [destiny]
+      summary: Generate AI destiny analysis
+      description: Generate personalized destiny report based on user input
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DestinyRequest"
+      responses:
+        "200":
+          description: Destiny analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DestinyResult"
+  /destiny/daily:
+    post:
+      operationId: getDailyFortune
+      tags: [destiny]
+      summary: Get daily fortune
+      description: Generate personalized daily fortune
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DailyFortuneRequest"
+      responses:
+        "200":
+          description: Daily fortune
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyFortune"
+  /destiny/compatibility:
+    post:
+      operationId: checkCompatibility
+      tags: [destiny]
+      summary: Check soulmate compatibility
+      description: Generate mystical compatibility report between two people
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompatibilityRequest"
+      responses:
+        "200":
+          description: Compatibility report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompatibilityResult"
+  /auth/register:
+    post:
+      operationId: authRegister
+      tags: [auth]
+      summary: Register with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRegisterRequest"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+  /auth/login:
+    post:
+      operationId: authLogin
+      tags: [auth]
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+  /auth/logout:
+    post:
+      operationId: authLogout
+      tags: [auth]
+      summary: Log out current session
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /auth/me:
+    get:
+      operationId: authMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+    patch:
+      operationId: authUpdateMe
+      tags: [auth]
+      summary: Update fields on the current user (first-login profile attach)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeRequest"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+  /auth/verify-email:
+    get:
+      operationId: authVerifyEmail
+      tags: [auth]
+      summary: Verify email via token from confirmation link (returns HTML)
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: HTML confirmation page
+          content:
+            text/html:
+              schema:
+                type: string
+        "400":
+          description: Invalid or expired link
+          content:
+            text/html:
+              schema:
+                type: string
+  /auth/vk/callback:
+    get:
+      operationId: authVkCallback
+      tags: [auth]
+      summary: VK OAuth redirect target (returns HTML)
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+        - name: error
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Browser landing page
+          content:
+            text/html:
+              schema:
+                type: string
+  /auth/forgot-password:
+    post:
+      operationId: authForgotPassword
+      tags: [auth]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthForgotPasswordRequest"
+      responses:
+        "200":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForgotPasswordResult"
+  /auth/reset-password:
+    post:
+      operationId: authResetPassword
+      tags: [auth]
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthResetPasswordRequest"
+      responses:
+        "200":
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /auth/vk/config:
+    get:
+      operationId: authVkConfig
+      tags: [auth]
+      summary: Get VK ID auth configuration
+      responses:
+        "200":
+          description: VK config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VkConfigResponse"
+  /profile/personal-data:
+    get:
+      operationId: profileGetPersonalData
+      tags: [profile]
+      summary: Get the current user's personal data
+      responses:
+        "200":
+          description: Personal data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonalDataResponse"
+    put:
+      operationId: profilePutPersonalData
+      tags: [profile]
+      summary: Save personal data (requires active consent)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonalDataRequest"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonalDataResponse"
+        "409":
+          description: Consent required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentRequiredError"
+  /profile/consent:
+    get:
+      operationId: profileGetConsentHistory
+      tags: [profile]
+      summary: List consent records and current policy version
+      responses:
+        "200":
+          description: Consent history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentHistoryResponse"
+    post:
+      operationId: profileAcceptConsent
+      tags: [profile]
+      summary: Record explicit consent (with IP and user agent)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptConsentRequest"
+      responses:
+        "200":
+          description: Consent recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentRecordResponse"
+  /profile/export:
+    get:
+      operationId: profileExport
+      tags: [profile]
+      summary: Export all personal data as JSON
+      responses:
+        "200":
+          description: Export
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportResponse"
+  /profile/delete-account:
+    post:
+      operationId: profileDeleteAccount
+      tags: [profile]
+      summary: Permanently delete the account and all linked data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteAccountRequest"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /auth/vk/exchange:
+    post:
+      operationId: authVkExchange
+      tags: [auth]
+      summary: Exchange VK code for session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VkExchangeRequest"
+      responses:
+        "200":
+          description: Logged in via VK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    OkResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required:
+        - ok
+    DestinyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        birthDate:
+          type: string
+        birthTime:
+          type: string
+        gender:
+          type: string
+        palmCategory:
+          type: string
+      required:
+        - name
+        - birthDate
+    DestinyResult:
+      type: object
+      properties:
+        personalityProfile:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        hiddenTalents:
+          type: string
+        loveStyle:
+          type: string
+        moneyEnergy:
+          type: string
+        futurePrediction:
+          type: string
+        soulmateType:
+          type: string
+        auraType:
+          type: string
+        auraColor:
+          type: string
+        destinyScore:
+          type: number
+        luckyNumbers:
+          type: array
+          items:
+            type: number
+        luckyDays:
+          type: array
+          items:
+            type: string
+        zodiacSign:
+          type: string
+        destinyArchetype:
+          type: string
+        lifePathNumber:
+          type: number
+      required:
+        - personalityProfile
+        - strengths
+        - weaknesses
+        - hiddenTalents
+        - loveStyle
+        - moneyEnergy
+        - futurePrediction
+        - soulmateType
+        - auraType
+        - auraColor
+        - destinyScore
+        - luckyNumbers
+        - luckyDays
+        - zodiacSign
+        - destinyArchetype
+        - lifePathNumber
+    DailyFortuneRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        zodiacSign:
+          type: string
+        auraType:
+          type: string
+        lifePathNumber:
+          type: number
+        destinyArchetype:
+          type: string
+        birthDate:
+          type: string
+      required:
+        - name
+        - zodiacSign
+    DailyFortune:
+      type: object
+      properties:
+        message:
+          type: string
+        energyLevel:
+          type: number
+        luckyColor:
+          type: string
+        affirmation:
+          type: string
+        warningArea:
+          type: string
+        spiritAnimal:
+          type: string
+        spiritAnimalEmoji:
+          type: string
+        loveInsight:
+          type: string
+        careerInsight:
+          type: string
+        healthInsight:
+          type: string
+        bestTime:
+          type: string
+        luckyNumber:
+          type: number
+        cosmicTip:
+          type: string
+      required:
+        - message
+        - energyLevel
+        - luckyColor
+        - affirmation
+        - warningArea
+        - spiritAnimal
+        - spiritAnimalEmoji
+        - loveInsight
+        - careerInsight
+        - healthInsight
+        - bestTime
+        - luckyNumber
+        - cosmicTip
+    CompatibilityRequest:
+      type: object
+      properties:
+        userName:
+          type: string
+        userBirthDate:
+          type: string
+        userZodiacSign:
+          type: string
+        partnerName:
+          type: string
+        partnerBirthDate:
+          type: string
+      required:
+        - userName
+        - userBirthDate
+        - userZodiacSign
+        - partnerName
+        - partnerBirthDate
+    CompatibilityResult:
+      type: object
+      properties:
+        score:
+          type: number
+        partnerZodiacSign:
+          type: string
+        summary:
+          type: string
+        loveCompatibility:
+          type: number
+        friendshipCompatibility:
+          type: number
+        passionLevel:
+          type: number
+        strengths:
+          type: array
+          items:
+            type: string
+        challenges:
+          type: array
+          items:
+            type: string
+        advice:
+          type: string
+        sharedDestiny:
+          type: string
+      required:
+        - score
+        - partnerZodiacSign
+        - summary
+        - loveCompatibility
+        - friendshipCompatibility
+        - passionLevel
+        - strengths
+        - challenges
+        - advice
+        - sharedDestiny
+    PublicUser:
+      type: object
+      properties:
+        id:
+          type: number
+        email:
+          type: string
+          nullable: true
+        displayName:
+          type: string
+          nullable: true
+        vkLinked:
+          type: boolean
+        emailVerified:
+          type: boolean
+        birthDate:
+          type: string
+          nullable: true
+        birthTime:
+          type: string
+          nullable: true
+        gender:
+          type: string
+          nullable: true
+      required:
+        - id
+        - email
+        - displayName
+        - vkLinked
+        - emailVerified
+    UpdateMeRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          nullable: true
+        birthDate:
+          type: string
+          nullable: true
+        birthTime:
+          type: string
+          nullable: true
+        gender:
+          type: string
+          nullable: true
+    AuthSession:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/PublicUser"
+        mailerWarning:
+          type: string
+          nullable: true
+      required:
+        - token
+        - user
+    AuthRegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        displayName:
+          type: string
+      required:
+        - email
+        - password
+    AuthLoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+    MeResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/PublicUser"
+      required:
+        - user
+    AuthForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+      required:
+        - email
+    ForgotPasswordResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        mailerConfigured:
+          type: boolean
+      required:
+        - ok
+        - mailerConfigured
+    AuthResetPasswordRequest:
+      type: object
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+      required:
+        - token
+        - newPassword
+    VkConfigResponse:
+      type: object
+      properties:
+        configured:
+          type: boolean
+        authUrl:
+          type: string
+        redirectUri:
+          type: string
+        state:
+          type: string
+        error:
+          type: string
+      required:
+        - configured
+    PersonalData:
+      type: object
+      properties:
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        marketingConsent:
+          type: boolean
+        personalizationConsent:
+          type: boolean
+        updatedAt:
+          type: string
+          nullable: true
+      required:
+        - email
+        - phone
+        - city
+        - marketingConsent
+        - personalizationConsent
+        - updatedAt
+    PersonalDataResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/PersonalData"
+      required:
+        - data
+    PersonalDataRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        marketingConsent:
+          type: boolean
+        personalizationConsent:
+          type: boolean
+        policyVersion:
+          type: string
+      required:
+        - marketingConsent
+        - personalizationConsent
+    ConsentRequiredError:
+      type: object
+      properties:
+        error:
+          type: string
+        requiredPolicyVersion:
+          type: string
+      required:
+        - error
+        - requiredPolicyVersion
+    ConsentRecord:
+      type: object
+      properties:
+        id:
+          type: number
+        policyVersion:
+          type: string
+        marketingConsent:
+          type: boolean
+        personalizationConsent:
+          type: boolean
+        acceptedAt:
+          type: string
+        ip:
+          type: string
+          nullable: true
+        userAgent:
+          type: string
+          nullable: true
+      required:
+        - id
+        - policyVersion
+        - marketingConsent
+        - personalizationConsent
+        - acceptedAt
+    ConsentHistoryResponse:
+      type: object
+      properties:
+        currentPolicyVersion:
+          type: string
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsentRecord"
+      required:
+        - currentPolicyVersion
+        - records
+    AcceptConsentRequest:
+      type: object
+      properties:
+        policyVersion:
+          type: string
+        marketingConsent:
+          type: boolean
+        personalizationConsent:
+          type: boolean
+      required:
+        - policyVersion
+        - marketingConsent
+        - personalizationConsent
+    ConsentRecordResponse:
+      type: object
+      properties:
+        record:
+          $ref: "#/components/schemas/ConsentRecord"
+      required:
+        - record
+    ExportResponse:
+      type: object
+      properties:
+        exportedAt:
+          type: string
+        policyVersion:
+          type: string
+        user:
+          type: object
+          additionalProperties: true
+        personalData:
+          oneOf:
+            - $ref: "#/components/schemas/PersonalData"
+            - type: "null"
+        consentRecords:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsentRecord"
+      required:
+        - exportedAt
+        - policyVersion
+        - user
+        - consentRecords
+    DeleteAccountRequest:
+      type: object
+      properties:
+        confirm:
+          type: string
+      required:
+        - confirm
+    VkExchangeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        redirectUri:
+          type: string
+        state:
+          type: string
+      required:
+        - code
+        - redirectUri
+        - state

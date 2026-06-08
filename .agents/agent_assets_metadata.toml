@@ -1,0 +1,26 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "-nBQRPnNypzfgPrgjKdIC"
+uri = "file://zerkalo-sudby-eas.tar.gz"
+type = "unspecified"
+title = "Зеркало Судьбы — исходники для EAS Build"
+
+[[outputs]]
+id = "bi1fzCUVz0vMkrbgRPqg5"
+uri = "file://zerkalo-sudby.zip"
+type = "unspecified"
+title = "Зеркало Судьбы — исходники для EAS Build"
+
+[[outputs]]
+id = "xhFybV36BoQZcunMytfIo"
+uri = "file://artifacts/ai-destiny-scanner/assets/images/icon.png"
+type = "image"
+title = "Иконка Зеркало Судьбы"
+
+[[outputs]]
+id = "s7BbCLrWJkU2NufBYEzlN"
+uri = "file://ЗЕРКАЛО_СУДЬБЫ_документация.txt"
+type = "text"
+title = "Зеркало Судьбы — полная документация"

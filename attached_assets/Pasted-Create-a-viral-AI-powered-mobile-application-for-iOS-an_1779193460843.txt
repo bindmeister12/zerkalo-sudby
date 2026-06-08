@@ -1,0 +1,160 @@
+Create a viral AI-powered mobile application for iOS and Android called “AI Destiny Scanner”.
+
+The app combines:
+
+* palm reading
+* astrology
+* numerology
+* AI personality analysis
+* future predictions
+
+Target audience:
+US mobile users aged 18–35 interested in astrology, self-discovery, spirituality, personality tests, and viral TikTok-style apps.
+
+The app must feel premium, addictive, mystical, emotional, and highly shareable.
+
+MAIN FLOW:
+
+1. Welcome Screen
+
+* Dark mystical premium UI
+* Animated glowing particles
+* CTA: “Discover your hidden destiny”
+
+2. User Input
+   Collect:
+
+* first name
+* birth date
+* optional birth time
+* optional gender
+* palm photo upload
+
+3. Palm Scan Screen
+
+* Fake AI scanning animation
+* Loading states
+* Mystical effects
+* Progress messages like:
+  “Analyzing energy lines…”
+  “Detecting hidden personality traits…”
+  “Calculating soulmate compatibility…”
+
+4. AI Analysis Result
+   Generate:
+
+* personality profile
+* strengths
+* weaknesses
+* hidden talents
+* love style
+* money energy
+* future prediction
+* soulmate type
+* aura type
+* destiny score
+* lucky numbers
+* lucky days
+
+STYLE OF RESULTS:
+
+* emotional
+* highly personalized
+* engaging
+* dramatic
+* slightly mysterious
+* TikTok-shareable
+* short readable paragraphs
+* bold titles
+* premium feel
+
+IMPORTANT:
+The analysis does NOT need to be scientifically accurate.
+The goal is emotional engagement and retention.
+
+MONETIZATION:
+Implement:
+
+* AdMob banners
+* interstitial ads
+* rewarded ads
+* premium subscription
+
+SUBSCRIPTION FEATURES:
+
+* full destiny report
+* unlimited scans
+* compatibility scans
+* daily predictions
+* aura readings
+* future timeline
+
+PAYWALL:
+Show partial blurred results before subscription popup.
+
+RETENTION FEATURES:
+
+* daily fortune
+* streak system
+* push notifications
+* “new hidden trait unlocked”
+* compatibility scanner
+* daily aura energy
+
+SOCIAL FEATURES:
+Generate beautiful shareable cards:
+
+* zodiac card
+* aura result
+* destiny type
+* personality type
+
+UI STYLE:
+
+* black/dark background
+* neon purple/blue glow
+* glassmorphism
+* smooth animations
+* modern premium aesthetic
+* mystical futuristic design
+
+TECH STACK:
+
+* Flutter frontend
+* Firebase backend
+* OpenAI API for generated analysis
+* Local caching
+* Push notifications
+* AdMob integration
+* RevenueCat for subscriptions
+
+AI GENERATION LOGIC:
+Use prompt-engineered personality generation based on:
+
+* zodiac sign
+* numerology
+* random personality variables
+* palm scan category
+
+Create multiple personality archetypes to make results feel unique.
+
+APP STORE OPTIMIZATION:
+Include:
+
+* app icon concept
+* screenshots
+* onboarding copy
+* ASO keywords
+* App Store description
+* TikTok marketing hooks
+
+IMPORTANT PRODUCT GOAL:
+The app should maximize:
+
+* retention
+* emotional engagement
+* subscription conversion
+* viral sharing
+* daily opens
+
+The app should feel similar to top-grossing astrology and AI personality apps in the US market.

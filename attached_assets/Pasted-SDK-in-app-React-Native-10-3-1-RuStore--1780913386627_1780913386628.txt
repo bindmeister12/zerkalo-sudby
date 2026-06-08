@@ -1,0 +1,1054 @@
+SDK Платежи in‑app для React Native (версия 10.3.1)
+RuStore позволяет интегрировать платежи в мобильное приложение.
+
+подсказка
+Если не знаете с чего начать, прочтите инструкцию в сценариях использования.
+
+Если вы переходите на Pay SDK с billingClient SDK, ознакомьтесь с инструкцией по переходу. Подробности о Pay SDK можно узнать тут.
+
+Подготовка к работе
+В файле android/app/build.gradle добавьте следующие строки.
+
+android/app/build.gradle
+dependencies {
+    implementation("com.facebook.react:react-android")
+    implementation("ru.rustore.sdk-wrapper.react-native:pay:10.3.1")
+
+    // ... остальные зависимости
+}
+
+Для скачивания зависимостей укажите репозиторий:
+
+ maven {
+            url = uri("https://artifactory-external.vkpartner.ru/artifactory/maven")
+        }
+
+
+Настройка проекта
+Application ID: ru.rustore.react.pay.example
+Минимальная версия SDK: Android API 24
+Целевая версия SDK: Android API 36
+Регистрация нативного модуля
+Для работы библиотеки необходимо зарегистрировать нативный модуль в MainApplication.java:
+
+import ru.rustore.react.pay.RuStoreReactPayPackage;
+
+// ...
+
+@Override
+protected List<ReactPackage> getPackages() {
+  @SuppressWarnings("UnnecessaryLocalVariable")
+  List<ReactPackage> packages = new PackageList(this).getPackages();
+  packages.add(new RuStoreReactPayPackage());
+  return packages;
+}
+
+JavaScript интерфейс
+В проекте реализован JavaScript интерфейс для работы с нативным модулем Android. Все методы расположены в директории src/libs/RuStoreReactPay/ репозитория с примером реализации, которые необходимо перенести в проект.
+
+Основные файлы
+index.tsx - основной модуль с методами для работы с платежами
+types.ts - TypeScript типы для работы с платежами
+Обработка deeplink
+Обработка deeplink в RuStore SDK позволяет эффективно взаимодействовать со сторонними приложениями, при проведении платежей через банковские приложения (СБП, SberPay и др.). Это позволяет перевести пользователя на экран оплаты, а после завершения транзакции — вернуть в ваше приложение.
+
+Для настройки работы с deeplink в вашем приложении и Pay SDK, укажите deeplinkScheme с помощью sdk_pay_scheme_value
+в вашем AndroidManifest.xml файле и переопределите метод onNewIntent вашего Activity
+
+Внимание
+При использовании deeplinks указание схемы является обязательным.
+При попытке платежа без указания схемы будет возникать ошибка.
+Допускаются только символы в кодировке ASCII. Формат должен соответствовать спецификации RFC-3986.
+Указание deeplinkScheme:
+
+AndroidManifest.xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="your.app.package.name">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.App"
+        tools:targetApi="n">
+        <activity
+                android:name="ru.rustore.sdk.pay.internal.presentation.ui.PayActivity"
+                android:exported="false"
+                android:launchMode="singleTask"
+                tools:replace="android:launchMode" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="yourappscheme" />
+            </intent-filter>
+
+        </activity>
+
+        <meta-data
+            android:name="sdk_pay_scheme_value"
+            android:value="yourappscheme" />
+
+    </application>
+</manifest>
+
+
+подсказка
+Замените yourappscheme на название своей схемы. Например, ru.package.name.rustore.scheme.
+
+Затем, добавьте следующий код в Activity, в которую необходимо вернуться после совершения оплаты (ваша страница приложения):
+
+Вызов метода getPurchaseAvailability
+class YourPayActivity: AppCompatActivity() {
+
+    private val intentInteractor: IntentInteractor by lazy {
+        RuStorePayClient.instance.getIntentInteractor()
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) {
+            intentInteractor.proceedIntent(intent)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        intentInteractor.proceedIntent(intent)
+    }
+}
+
+Для восстановления состояния вашего приложения при возврате с deeplink добавьте в AndroidManifest.xml атрибут android:launchMode="singleTop".
+
+Указание launchMode:
+
+AndroidManifest.xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="your.app.package.name">
+    <!-- ... -->
+
+    <application>
+      <!-- ... -->
+        <activity
+            android:name=".YourPayActivity"
+            android:launchMode="singleTop"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
+
+            <!-- ... -->
+
+        </activity>
+      <!-- ... -->
+    </application>
+
+</manifest>
+
+Инициализация SDK
+Перед вызовом методов библиотеки необходимо выполнить ее инициализацию. Сама инициализация происходит автоматически, но для работы SDK в вашем файле AndroidManifest.xml необходимо прописать console_app_id_value.
+
+AndroidManifest.xml
+<meta-data
+    android:name="console_app_id_value"
+    android:value="@string/CONSOLE_APPLICATION_ID" />
+
+В strings.xml замените строку с вашим app_id.
+
+strings.xml
+<string name="CONSOLE_APPLICATION_ID">your_app_id</string>
+
+CONSOLE_APPLICATION_ID — идентификатор приложения из RuStore консоли.
+
+Где в RuStore Консоль отображаются идентификаторы приложений?
+Важно
+ApplicationId, указанный в build.gradle, должен совпадать с applicationId APK-файла, который вы публиковали в RuStore Консоль.
+Подпись keystore должна совпадать с подписью, которой было подписано приложение, опубликованное в RuStore Консоль. Убедитесь, что используемый buildType (пр. debug) использует такую же подпись, что и опубликованное приложение (пр. release).
+
+информация
+В целях безопасности, SDK устанавливает android:usesCleartextTraffic="false" по умолчанию, чтобы предотвратить передачу данных по незащищенному HTTP и защитить от атак типа "Man-in-the-Middle". Если ваше приложение требует использования HTTP, вы можете изменить этот атрибут на true, но делайте это на свой страх и риск, так как это увеличивает шанс перехвата и подмены данных. Мы рекомендуем разрешать незащищенный трафик только в исключительных случаях и для доверенных доменов, предпочитая HTTPS для всех сетевых взаимодействий.
+
+Методы SDK
+Доступные публичные интеракторы:
+
+PurchaseInteractor - интерактор, который позволяет работать с платежами и имеет несколько публичных методов.
+
+RuStoreReactPay.getPurchase(purchaseId: string): Promise<{ productPurchase?: ProductPurchase; subscriptionPurchase?: SubscriptionPurchase }> - позволяет получить информацию о покупке по ее ID.
+
+RuStoreReactPay.getPurchases(params?: { productType?: ProductType; purchaseStatus?: ProductPurchaseStatus | SubscriptionPurchaseStatus; }): Promise<Array<{ productPurchase?: ProductPurchase; subscriptionPurchase?: SubscriptionPurchase }>> — позволяет получить покупки пользователя. Данный метод поддерживает опциональную фильтрацию по типу товаров (потребляемые, непотребляемые товары или подписки), а также по статусу покупки (поддерживаются статусы PAID, CONFIRMED ACTIVE и PAUSED). По умолчанию фильтры отключены, и вернутся все покупки пользователя (независимо от типа товара) в статусах PAID, CONFIRMED ACTIVE и PAUSED.
+
+RuStoreReactPay.getPurchaseAvailability(): Promise<PurchaseAvailability> - возвращает результат проверки доступности работы с платежами.
+
+RuStoreReactPay.purchase(params: { productId: string; orderId?: string; quantity?: number; developerPayload?: string; appUserId?: string; appUserEmail?: string; preferredPurchaseType?: PreferredPurchaseType; }): Promise<ProductPurchaseResult> - позволяет совершить покупку продукта с указанием желаемого типа оплаты - одностадийной (ONE_STEP) или двухстадийной (TWO_STEP). Для данного метода оплаты на платежной шторке доступны все способы оплаты. Если параметр не задан, по умолчанию запускается с оплатой в одну стадию.
+
+Важно!
+Если указан тип оплаты TWO_STEP, будет произведена попытка запустить двухстадийную оплату, но итоговый результат напрямую будет зависеть от того, какой способ оплаты (карта, СБП и др.) будет выбран пользователем.
+
+Обратите внимание, что тип оплаты TWO_STEP недоступен:
+
+При выборе способа оплаты СБП.
+
+При покупке подписок.
+
+Двухстадийная оплата доступна только для определенного набора способов оплаты (на текущий момент — только для карт и SberPay). Если выбран способ оплаты, который не поддерживает холдирование, то покупка будет запущена по сценарию с одной стадией.
+
+RuStoreReactPay.purchaseTwoStep(params: { productId: string; orderId?: string; quantity?: number; developerPayload?: string; appUserId?: string; appUserEmail?: string; }): Promise<ProductPurchaseResult> - запускает сценарий гарантированной двухстадийной покупки товара. При использовании данного метода пользователю на платежной шторке доступен ограниченный набор способов оплаты - только те, которые поддерживают двухстадийную оплату. В процессе платежа сначала осуществляется холдирование денежных средств покупателя, которые списываются только после подтверждения покупки методом confirmTwoStepPurchase.
+
+RuStoreReactPay.confirmTwoStepPurchase(params: { purchaseId: string; developerPayload?: string; }): Promise<void> - подтверждение покупки, совершенной по двухстадийной оплате.
+
+RuStoreReactPay.cancelTwoStepPurchase(purchaseId: string): Promise<void> - отмена покупки, совершенной по двухстадийной оплате.
+
+ProductInteractor - интерактор, который позволяет работать с продуктами:
+
+RuStoreReactPay.getProducts(ids: string[]): Promise<Product[]> - позволяет получить информацию по активным продуктам, опубликованным в RuStore консоль.
+Важно
+Данный метод возвращает не более 1000 продуктов и работает без авторизации и наличия установленного RuStore на устройстве пользователя.
+
+UserInteractor - интерактор, который позволяет получить статус авторизации пользователя UserAuthorizationStatus. У данной модели может быть 2 состояния:
+
+AUTHORIZED - пользователь авторизован в RuStore
+UNAUTHORIZED - пользователь неавторизован в RuStore.
+Дополнительный метод: RuStoreReactPay.getUserAuthorizationStatus(): Promise<boolean> — true соответствует AUTHORIZED, false — UNAUTHORIZED.
+IntentInteractor - интерактор, который позволяет обрабатывать intent-ы:
+
+proceedIntent(intent) — метод для обработки deeplinks, использующихся для оплаты в приложениях банков.
+Вызов данного метода необходим для корректного отображения шторки оплаты при возвращении в приложение
+из приложения банка.
+блок RuStoreUtils - набор открытых методов, таких как:
+
+isRuStoreInstalled - проверки наличия приложения RuStore на устройстве пользователя.
+openRuStoreDownloadInstruction - открывает веб-страницу для скачивания приложения RuStore.
+openRuStore - запускает приложение RuStore.
+openRuStoreAuthorization - запускает приложение RuStore для авторизации. После успешной авторизации пользователя приложение RuStore автоматически закроется.
+Типы покупок
+В SDK предусмотрен базовый интерфейс Purchase, который объединяет общие поля всех типов покупок. На его основе созданы две реализации:
+
+ProductPurchase: для потребляемых и непотребляемых покупок.
+SubscriptionPurchase: для подписок.
+Данное разделение позволяет каждому типу покупки иметь свои уникальные свойства и поведение.
+
+Интерфейс Purchase
+interface Purchase {
+  purchaseId: string;
+  invoiceId: string;
+  orderId?: string;
+  purchaseType: PurchaseType;
+  status: PurchaseStatus;
+  description: string;
+  purchaseTime?: string; /** Время покупки в формате ISO‑8601 */
+  price: number;
+  amountLabel: string;
+  currency: string; /** Код валюты ISO 4217 */
+  developerPayload?: string;
+  sandbox: boolean;
+}
+
+Получение сведений о покупке
+Для получения информации о покупке, используйте метод getPurchase.
+// Получить информацию о конкретной покупке
+RuStoreReactPay.getPurchase(purchaseId: string): Promise<{
+  productPurchase?: ProductPurchase;
+  subscriptionPurchase?: SubscriptionPurchase;
+}>
+
+// Получить список покупок с фильтрацией
+RuStoreReactPay.getPurchases(params?: {
+  productType?: ProductType;
+  purchaseStatus?: ProductPurchaseStatus | SubscriptionPurchaseStatus;
+}): Promise<Array<{
+  productPurchase?: ProductPurchase;
+  subscriptionPurchase?: SubscriptionPurchase;
+}>>
+
+Метод возвращает информацию о конкретной покупке в любом статусе. Модель покупки указана в разделе типы покупок
+
+Получение списка покупок
+Для получения списка покупок пользователя используйте метод getPurchases.
+
+Вызов метода получения списка покупок пользователя
+RuStoreReactPay.getPurchases()
+  .then((purchases) => {
+    purchases.forEach((purchase) => {
+      // каждая покупка может содержать либо объект productPurchase, либо subscriptionPurchase
+      const { productPurchase, subscriptionPurchase } = purchase;
+      if (productPurchase) {
+        console.log(`Product ID: ${productPurchase.productId}, Status: ${productPurchase.status}`);
+      } else if (subscriptionPurchase) {
+        console.log(`Product ID: ${subscriptionPurchase.productId}, Status: ${subscriptionPurchase.status}`);
+      }
+    });
+  })
+  .catch((error) => {
+    // Обработка ошибок
+  });
+
+
+Данный метод позволяет фильтровать покупки по типу товаров и статусу покупки:
+
+Типы товаров:
+
+Потребляемые товары - ProductType.CONSUMABLE_PRODUCT
+Непотребляемые товары - ProductType.NON_CONSUMABLE_PRODUCT
+Подписки - ProductType.SUBSCRIPTION
+Статусы покупок:
+
+Для продуктов:
+
+PAID: Успешное холдирование средств, покупка ожидает подтверждения со стороны разработчика.
+CONFIRMED: Покупка подтверждена, средства списаны.
+Для подписок:
+
+ACTIVE: Подписка активна.
+PAUSED: Подписка в Hold периоде (например, из-за недостатка средств на карте), продолжаются попытки списания в соответствии с настройками тарифа подписки.
+По умолчанию фильтры выключены, если значения не заданы, метод вернет все покупки пользователя в статусах PAID, CONFIRMED, ACTIVE и PAUSED, независимо от типа товара.
+
+Вызов метода получения списка покупок пользователя с фильтрацией
+// Пример вызова с фильтрами по типу товара и статусу покупки
+// Передайте объект с нужными полями productType и status
+RuStoreReactPay.getPurchases({
+  // productType: ProductType.consumable,
+  // status: ProductPurchaseStatus.paid,
+})
+  .then((purchases) => {
+    purchases.forEach((purchase) => {
+      const { productPurchase, subscriptionPurchase } = purchase;
+      if (productPurchase) {
+        console.log(`Product ID: ${productPurchase.productId}, Status: ${productPurchase.status}`);
+      } else if (subscriptionPurchase) {
+        console.log(`Product ID: ${subscriptionPurchase.productId}, Status: ${subscriptionPurchase.status}`);
+      }
+    });
+  })
+  .catch((error) => {
+    // Обработка ошибок
+  });
+
+
+Получение списка продуктов
+Для получения продуктов, добавленных в ваше приложение через RuStore консоль, необходимо использовать метод getProducts.
+
+// Получение списка продуктов
+RuStoreReactPay.getProducts(productIds)
+  .then((response) => {
+    // response.products — массив продуктов
+    response.products.forEach((product) => {
+      console.log(product.productId);
+    });
+  })
+  .catch((err) => {
+    console.log('products err:', err);
+  });
+
+productIds — список идентификаторов продуктов (задаются при создании продукта в консоли разработчика). Список продуктов имеет ограничение в размере 1000 элементов.
+
+Где в RuStore Консоль отображаются идентификаторы продуктов?
+Метод возвращает список продуктов. Ниже представлена модель продукта.
+
+export type Product = {
+  productId: string;
+  type: ProductType;
+  amountLabel: string;
+  price?: number;
+  currency: string;
+  imageUrl: string;
+  title: string;
+  description?: string;
+  subscriptionInfo?: SubscriptionInfo;
+};
+
+productId — идентификатор продукта, который был присвоен продукту в RuStore Консоли (обязательный параметр).
+type — тип продукта. CONSUMABLE/NON-CONSUMABLE (потребляемый/непотребляемый).
+amountLabel — отформатированная цена покупки, включая валютный знак.
+price — цена в минимальных единицах (в копейках).
+currency — код валюты ISO 4217.
+title — название продукта на языке language.
+description — описание на языке language.
+imageUrl — ссылка на картинку.
+Примеры ответа
+
+Пример модели Потребляемого продукта
+Product(
+    productId = ProductId("conProduct1"),
+    type = ProductType.CONSUMABLE_PRODUCT,
+    amountLabel = AmountLabel("100.00 руб."),
+    price = Price(10000),
+    currency = Currency("RUB"),
+    imageUrl = Url("https://your_image_consumable_product.png"),
+    title = Title("Название Потребляемого продукта"),
+    description = Description("Описание потребляемого продукта"),
+ )
+
+Пример модели Непотребляемого продукта
+Product(
+    productId = ProductId("nonConProduct1"),
+    type = ProductType.NON_CONSUMABLE_PRODUCT,
+    amountLabel = AmountLabel("200.00 руб."),
+    price = Price(20000),
+    currency = Currency("RUB"),
+    imageUrl = Url("https://your_image_non_consumable_product.png"),
+    title = Title("Название Непотребляемого продукта"),
+    description = Description("Описание Непотребляемого продукта"),
+ )
+
+Пример модели Подписки
+Product(
+    productId = ProductId("sub_1"),
+    type = ProductType.SUBSCRIPTION,
+    amountLabel = AmountLabel("300.00 руб."),
+    price = Price(30000),
+    currency = Currency("RUB"),
+    imageUrl = Url("https://your_image_subscription.png"),
+    title = Title("Название вашей подписки"),
+    description = Description("Описание вашей подписки"),
+ )
+
+Определение наличия авторизации у пользователя
+Метод возвращает Promise<boolean>: true — пользователь авторизован в RuStore, false — пользователь не авторизован (или RuStore не установлен на устройстве).
+
+RuStoreReactPay.getUserAuthorizationStatus()
+  .then((isAuthorized) => {
+    if (isAuthorized) {
+      // Логика когда пользователь авторизован в RuStore
+    } else {
+      // Логика когда пользователь НЕ авторизован в RuStore
+    }
+  })
+  .catch((error) => {
+    // Обработка ошибки
+  });
+
+Проверка доступности работы с платежами
+Для проверки доступности платежей, вызовите метод getPurchaseAvailability. При его вызове проверяются следующие условия.
+
+Для приложения включена возможность покупок в RuStore Консоли.
+Пользователь и приложение не должны быть заблокированы в RuStore.
+Вызов метода getPurchaseAvailability
+// Получение информации о доступности покупок
+RuStoreReactPay.getPurchaseAvailability().then((value) => {
+  // value.isAvailable — признак доступности покупок
+  if (value.isAvailable) {
+    // Покупки доступны
+  } else {
+    // Покупки недоступны
+  }
+}).catch((error) => {
+  // Обработка ошибок
+});
+
+Модель разовой покупки ProductPurchase
+Оплата с выбором типа покупки
+
+Для вызова покупки продукта с выбором стадийности оплаты используйте метод purchase.
+
+Вызов метода покупки продукта
+RuStoreReactPay.purchase(params: {
+  productId: string;
+  orderId?: string;
+  quantity?: number;
+  developerPayload?: string;
+  appUserId?: string;
+  appUserEmail?: string;
+  preferredPurchaseType?: PreferredPurchaseType;
+  sdkTheme?: string;
+}): Promise<ProductPurchaseResult>
+
+preferredPurchaseType — желаемый тип покупки: одностадийная (ONE_STEP) или двухстадийная (TWO_STEP).
+Важно
+Данный метод по умолчанию запускается по одностадийному сценарию оплаты (preferredPurchaseType = PreferredPurchaseType.ONE_STEP), т.е. без холдирования средств.
+
+Для двухстадийной оплаты нужно указать preferredPurchaseType = PreferredPurchaseType.TWO_STEP. Двухстадийная оплата (т.е. оплата с холдированием средств) для данного метода не гарантирована и напрямую зависит от того, какой способ оплаты (карта, СПБ и др.) выбрал пользователь.
+
+При запуске данного метода (с предпочитаемым preferredPurchaseType = twoStep), до тех пор пока пользователь не выберет способ оплаты, стадийность покупки будет UNDEFINED. Учитывайте данное поведение при обработке результатов отмены (ProductPurchaseCancelled) или ошибки (ProductPurchaseException) покупки.
+
+Двухстадийная оплата (с холдированием средств)
+
+Для вызова покупки продукта по двухстадийному сценарию используйте метод purchaseTwoStep.
+
+к сведению
+При вызове данного метода пользователю будет доступен ограниченный набор способов оплаты — только те, которые поддерживают двухстадийную оплату.
+
+Ограничения по типам платежей для подписок
+На данный момент покупка подписки (SubscriptionPurchase) может быть совершена только с использованием одностадийного платежа (PurchaseType.ONE_STEP).
+
+Вызов метода покупки продукта
+RuStoreReactPay.purchaseTwoStep(params: {
+  productId: string;
+  orderId?: string;
+  quantity?: number;
+  developerPayload?: string;
+  appUserId?: string;
+  appUserEmail?: string;
+  sdkTheme?: string;
+}): Promise<ProductPurchaseResult>
+
+Структура параметров покупки
+
+Структура параметров покупки
+export type ProductPurchase = {
+  purchaseId: string;
+  invoiceId: string;
+  orderId?: string;
+  purchaseType: PurchaseType;
+  status: ProductPurchaseStatus;
+  description: string;
+  purchaseTime?: string;
+  price: number;
+  amountLabel: string;
+  currency: string;
+  developerPayload?: string;
+  sandbox: boolean;
+  productId: string;
+  quantity: number;
+  productType: ProductType;
+};
+
+Работа с PurchaseEventListener
+
+Методам purchase и purchaseTwoStep можно передать опциональный параметр purchaseEventListener, который позволяет отслеживать этапы покупки:
+
+onPurchaseCreated — покупка создана (счет сформирован)
+onPaymentStarted — оплата начата
+onPaymentCompleted — оплата успешно завершена
+onPaymentFailed — ошибка оплаты
+onPurchaseCancelled — отмена покупки
+Интерфейс для отслеживания жизненного цикла покупки. Позволяет получать purchaseId и invoiceId на каждом этапе совершения покупки.
+
+Сигнатура типа
+interface PurchaseEventListener {
+  /** Вызывается при создании покупки (счет сформирован) */
+  onPurchaseCreated: (purchaseId: string, invoiceId: string) => void;
+  
+  /** Вызывается при начале процесса оплаты */
+  onPaymentStarted: (purchaseId: string, invoiceId: string) => void;
+  
+  /** Вызывается при успешном завершении оплаты */
+  onPaymentCompleted: (purchaseId: string, invoiceId: string) => void;
+  
+  /** Вызывается при ошибке оплаты */
+  onPaymentFailed: (purchaseId: string | null, invoiceId: string | null) => void;
+  
+  /** Вызывается при отмене покупки пользователем */
+  onPurchaseCancelled: (purchaseId: string | null, invoiceId: string | null) => void;
+}
+
+
+Примеры использования
+// Создаем слушатель
+const purchaseEventListener = {
+  onPurchaseCreated: (purchaseId, invoiceId) => {
+    console.log(`Покупка создана: ${purchaseId}, счет: ${invoiceId}`);
+    // Отправить событие в аналитику
+  },
+  onPaymentStarted: (purchaseId, invoiceId) => {
+    console.log(`Оплата начата: ${purchaseId}, счет: ${invoiceId}`);
+    // Показать индикатор загрузки
+  },
+  onPaymentCompleted: (purchaseId, invoiceId) => {
+    console.log(`Оплата успешна: ${purchaseId}, счет: ${invoiceId}`);
+    // Выдать товар пользователю
+  },
+  onPaymentFailed: (purchaseId, invoiceId) => {
+    console.error(`Ошибка оплаты: ${purchaseId}, счет: ${invoiceId}`);
+    // Показать сообщение об ошибке
+  },
+  onPurchaseCancelled: (purchaseId, invoiceId) => {
+    console.log(`Покупка отменена: ${purchaseId}, счет: ${invoiceId}`);
+    // Очистить UI
+  }
+};
+
+// Передаем слушатель в метод purchase
+try {
+  const result = await RuStoreReactPay.purchase(
+    { 
+      productId: 'your_product_id',
+      appUserId: 'user_123',
+      appUserEmail: 'user@example.com'
+    },
+    'ONE_STEP',
+    'LIGHT',
+    purchaseEventListener  // 👈 Передаем слушатель сюда
+  );
+  console.log('Результат:', result);
+} catch (error) {
+  console.error('Ошибка:', error);
+}
+
+productId — идентификатор продукта, который был присвоен продукту в RuStore Консоли (обязательный параметр).
+quantity — количество продукта. Необязательный параметр со стандартным значением 1. Применим только к покупке потребляемых товаров.
+orderId — уникальный идентификатор оплаты, сформированный приложением (опциональный параметр). Если вы укажете этот параметр в вашей системе, вы получите его в ответе при работе с API. Если не укажете, он будет сгенерирован автоматически (uuid). Максимальная длина 150 символов.
+developerPayload — строка с дополнительной информацией о заказе, которую вы можете установить при подтверждении покупки. Эта строка переопределяет значение, заданное при инициализации. Максимальная длина 250 символов. Символы не экранируются.
+appUserId — внутренний ID пользователя в вашем приложении (опциональный параметр). Строка с максимальной длиной в 128 символов.
+подсказка
+Например, данный параметр может использоваться для выявления случаев мошенничества в вашем приложении, что позволит повысить его безопасность.
+
+appUserEmail — это необязательный параметр, позволяющий задать адрес электронной почты пользователя в вашем приложении. Если адрес электронной почты покупателя был указан при регистрации в приложении, его можно передать для автоматического заполнения поля email при отправке чека — как для платежей вне RuStore, так и для случаев, когда пользователь не авторизован в RuStore. Это избавляет пользователя от необходимости вручную вводить email, сокращает путь до покупки и способствует повышению конверсии.
+Статусная модель покупки
+Статусная модель одностадийного платежа.
+
+Статусная модель двухстадийного платежа.
+
+Модель подписки
+Модель подписки SubscriptionPurchase
+export type SubscriptionPurchase = {
+  purchaseId: string;
+  invoiceId: string;
+  orderId?: string;
+  purchaseType: PurchaseType;
+  status: SubscriptionPurchaseStatus;
+  description: string;
+  purchaseTime?: string;
+  price: number;
+  amountLabel: string;
+  currency: string;
+  developerPayload?: string;
+  sandbox: boolean;
+  productId: string;
+  expirationDate: string;
+  gracePeriodEnabled: boolean;
+};
+
+purchaseId — идентификатор покупки. Идентификатор покупки. Используется для получения информации о покупке в SDK методом получения информации о покупке.
+invoiceId — идентификатор счета. Идентификатор счета. Используется для серверной валидации платежа, поиска платежей в консоли разработчика, а также отображается покупателю в истории платежей.
+orderId - уникальный идентификатор оплаты, указанный разработчиком или сформированный автоматически (uuid).
+PurchaseType — тип покупки:
+ONE_STEP - одностадийная покупка;
+TWO_STEP - двухстадийная покупка;
+UNDEFINED - стадийность не определена.
+status - состояние подписки:
+INVOICE_CREATED - создан счет на оплату, подписка ожидает оплаты.
+CANCELLED - счет на оплату подписки отменен.
+EXPIRED - срок действия оплаты счета истек.
+PROCESSING - первый платеж по подписке в обработке.
+REJECTED - первый платеж по подписке отклонен. Подписка не оформлена.
+ACTIVE - подписка активна.
+EXPIRED - срок действия подписки истек. - тоже самое, не подписки, а время на оплату счета первого для оформления подписки истекло, никакой подписки еще не было
+PAUSED - подписка приостановлена из-за проблем с оплатой.
+TERMINATED - закончились попытки списания по подписке (все были неуспешными). Подписка закрыта автоматически из-за проблем с оплатой.
+CLOSED - подписка была отменена пользователем или разработчиком. Истек срок оплаченного периода, подписка закрыта.
+description - описание покупки.
+purchaseTime — время покупки.
+price — цена в минимальных единицах (в копейках).
+amountLabel — отформатированная цена покупки, включая валютный знак.
+currency — код валюты ISO 4217.
+developerPayload — строка с дополнительной информацией о заказе, которую вы можете установить при подтверждении покупки. Эта строка переопределяет значение, заданное при инициализации
+sandbox — флаг тестового платежа. Значение true — тестовый платеж, false— реальный платеж.
+
+productId — идентификатор продукта, который был присвоен продукту в RuStore Консоли (обязательный параметр). Идентификатор продукта, который был присвоен продукту в RuStore Консоли (обязательный параметр).
+expirationDate - дата окончания действия подписки.
+gracePeriodEnabled - флаг, указывающий, активен ли Grace-период для подписки.
+Статусная модель подписки
+Покупка продукта
+Пояснения по работе с одностадийными и двухстадийными оплатами
+При использовании одностадийного платежа покупка не требует подтверждения, денежные средства сразу списываются со счета покупателя, а с разработчика удерживается комиссия. В таком случае, если требуется вернуть денежные средства клиенту (например, по какой-то причине нет возможности поставить продукт), возможен только возврат средств через RuStore Консоль, денежные средства возвращаются покупателю через несколько дней. Возвращается полная стоимость покупки, при этом удержанная комиссия разработчику не возмещается.
+В случае использования двухстадийного платежа сначала производится холдирование средств на счете покупателя. Комиссия в этом случае не удерживается. После холдирования покупка требует подтверждения или отмены. Комиссия с разработчика удерживается при подтверждении покупки. Отмена покупки означает снятие холда - денежные средства мгновенно снова доступны покупателю.
+Ограничения по типам платежей для подписок
+На данный момент покупка подписки (SubscriptionPurchase) может быть совершена только с использованием одностадийного платежа (PurchaseType.ONE_STEP).
+
+Важно
+Двухстадийная оплата доступна только для определенного набора способов оплаты (на текущий момент — только для карт и SberPay). Технологии СБП не поддерживают двухстадийную оплату. Если выбран способ оплаты, который не поддерживает холдирование, то покупка будет запущена по сценарию с одной стадией.
+
+Оплата с выбором типа покупки
+
+Для вызова покупки продукта с выбором стадийности оплаты используйте метод purchase.
+
+Вызов метода покупки продукта
+RuStoreReactPay.purchase(params: {
+  productId: string;
+  orderId?: string;
+  quantity?: number;
+  developerPayload?: string;
+  appUserId?: string;
+  appUserEmail?: string;
+  preferredPurchaseType?: PreferredPurchaseType;
+  sdkTheme?: string;
+}): Promise<ProductPurchaseResult>
+
+preferredPurchaseType — желаемый тип покупки: одностадийная (ONE_STEP) или двухстадийная (TWO_STEP).
+Важно
+Данный метод по умолчанию запускается по одностадийному сценарию оплаты (preferredPurchaseType = PreferredPurchaseType.ONE_STEP), т.е. без холдирования средств.
+
+Для двухстадийной оплаты нужно указать preferredPurchaseType = PreferredPurchaseType.TWO_STEP. Двухстадийная оплата (т.е. оплата с холдированием средств) для данного метода не гарантирована и напрямую зависит от того, какой способ оплаты (карта, СПБ и др.) выбрал пользователь.
+
+При запуске данного метода (с предпочитаемым preferredPurchaseType = twoStep), до тех пор пока пользователь не выберет способ оплаты, стадийность покупки будет UNDEFINED. Учитывайте данное поведение при обработке результатов отмены (ProductPurchaseCancelled) или ошибки (ProductPurchaseException) покупки.
+
+Двухстадийная оплата (с холдированием средств)
+
+Для вызова покупки продукта по двухстадийному сценарию используйте метод purchaseTwoStep.
+
+к сведению
+При вызове данного метода пользователю будет доступен ограниченный набор способов оплаты — только те, которые поддерживают двухстадийную оплату.
+
+Ограничения по типам платежей для подписок
+На данный момент покупка подписки (SubscriptionPurchase) может быть совершена только с использованием одностадийного платежа (PurchaseType.ONE_STEP).
+
+Вызов метода покупки продукта
+RuStoreReactPay.purchaseTwoStep(params: {
+  productId: string;
+  orderId?: string;
+  quantity?: number;
+  developerPayload?: string;
+  appUserId?: string;
+  appUserEmail?: string;
+  sdkTheme?: string;
+}): Promise<ProductPurchaseResult>
+
+Структура параметров покупки
+
+Структура параметров покупки
+export type ProductPurchase = {
+  purchaseId: string;
+  invoiceId: string;
+  orderId?: string;
+  purchaseType: PurchaseType;
+  status: ProductPurchaseStatus;
+  description: string;
+  purchaseTime?: string;
+  price: number;
+  amountLabel: string;
+  currency: string;
+  developerPayload?: string;
+  sandbox: boolean;
+  productId: string;
+  quantity: number;
+  productType: ProductType;
+};
+
+Работа с PurchaseEventListener
+
+Методам purchase и purchaseTwoStep можно передать опциональный параметр purchaseEventListener, который позволяет отслеживать этапы покупки:
+
+onPurchaseCreated — покупка создана (счет сформирован)
+onPaymentStarted — оплата начата
+onPaymentCompleted — оплата успешно завершена
+onPaymentFailed — ошибка оплаты
+onPurchaseCancelled — отмена покупки
+Интерфейс для отслеживания жизненного цикла покупки. Позволяет получать purchaseId и invoiceId на каждом этапе совершения покупки.
+
+Сигнатура типа
+interface PurchaseEventListener {
+  /** Вызывается при создании покупки (счет сформирован) */
+  onPurchaseCreated: (purchaseId: string, invoiceId: string) => void;
+  
+  /** Вызывается при начале процесса оплаты */
+  onPaymentStarted: (purchaseId: string, invoiceId: string) => void;
+  
+  /** Вызывается при успешном завершении оплаты */
+  onPaymentCompleted: (purchaseId: string, invoiceId: string) => void;
+  
+  /** Вызывается при ошибке оплаты */
+  onPaymentFailed: (purchaseId: string | null, invoiceId: string | null) => void;
+  
+  /** Вызывается при отмене покупки пользователем */
+  onPurchaseCancelled: (purchaseId: string | null, invoiceId: string | null) => void;
+}
+
+
+Примеры использования
+// Создаем слушатель
+const purchaseEventListener = {
+  onPurchaseCreated: (purchaseId, invoiceId) => {
+    console.log(`Покупка создана: ${purchaseId}, счет: ${invoiceId}`);
+    // Отправить событие в аналитику
+  },
+  onPaymentStarted: (purchaseId, invoiceId) => {
+    console.log(`Оплата начата: ${purchaseId}, счет: ${invoiceId}`);
+    // Показать индикатор загрузки
+  },
+  onPaymentCompleted: (purchaseId, invoiceId) => {
+    console.log(`Оплата успешна: ${purchaseId}, счет: ${invoiceId}`);
+    // Выдать товар пользователю
+  },
+  onPaymentFailed: (purchaseId, invoiceId) => {
+    console.error(`Ошибка оплаты: ${purchaseId}, счет: ${invoiceId}`);
+    // Показать сообщение об ошибке
+  },
+  onPurchaseCancelled: (purchaseId, invoiceId) => {
+    console.log(`Покупка отменена: ${purchaseId}, счет: ${invoiceId}`);
+    // Очистить UI
+  }
+};
+
+// Передаем слушатель в метод purchase
+try {
+  const result = await RuStoreReactPay.purchase(
+    { 
+      productId: 'your_product_id',
+      appUserId: 'user_123',
+      appUserEmail: 'user@example.com'
+    },
+    'ONE_STEP',
+    'LIGHT',
+    purchaseEventListener  // 👈 Передаем слушатель сюда
+  );
+  console.log('Результат:', result);
+} catch (error) {
+  console.error('Ошибка:', error);
+}
+
+productId — идентификатор продукта, который был присвоен продукту в RuStore Консоли (обязательный параметр).
+quantity — количество продукта. Необязательный параметр со стандартным значением 1. Применим только к покупке потребляемых товаров.
+orderId — уникальный идентификатор оплаты, сформированный приложением (опциональный параметр). Если вы укажете этот параметр в вашей системе, вы получите его в ответе при работе с API. Если не укажете, он будет сгенерирован автоматически (uuid). Максимальная длина 150 символов.
+developerPayload — строка с дополнительной информацией о заказе, которую вы можете установить при подтверждении покупки. Эта строка переопределяет значение, заданное при инициализации. Максимальная длина 250 символов. Символы не экранируются.
+appUserId — внутренний ID пользователя в вашем приложении (опциональный параметр). Строка с максимальной длиной в 128 символов.
+подсказка
+Например, данный параметр может использоваться для выявления случаев мошенничества в вашем приложении, что позволит повысить его безопасность.
+
+appUserEmail — это необязательный параметр, позволяющий задать адрес электронной почты пользователя в вашем приложении. Если адрес электронной почты покупателя был указан при регистрации в приложении, его можно передать для автоматического заполнения поля email при отправке чека — как для платежей вне RuStore, так и для случаев, когда пользователь не авторизован в RuStore. Это избавляет пользователя от необходимости вручную вводить email, сокращает путь до покупки и способствует повышению конверсии.
+Подтверждение покупки
+Подтверждения требуют только покупки, которые были запущены по двухстадийному сценарию оплаты, т.е. с холдированием средств. Такие покупки, после успешного холдирования будут находиться в статусе PurchaseStatus.paid..
+
+Для списания средств с карты покупателя требуется подтверждение покупки. Для этого вы должны использовать метод confirmTwoStepPurchase.
+
+// Подтверждение двухстадийной покупки
+RuStoreReactPay.confirmTwoStepPurchase(id)
+  .then(() => {
+    // Process success
+  })
+  .catch((error) => {
+    // Process error
+  });
+
+id — идентификатор покупки.
+developerPayload — строка с дополнительной информацией о заказе, которую вы можете установить при подтверждении покупки. Эта строка переопределяет значение, заданное при инициализации
+Отмена покупки
+Через SDK можно отменить только те покупки, которые были запущены по двухстадийному сценарию оплаты, т.е. с холдированием средств.
+
+Такие покупки после успешной оплаты будут находиться в статусе PurchaseStatus.paid. После отмены покупки будут переходить в статус PurchaseStatus.reversed.
+
+Используйте отмену покупки в случаях, если после оплаты (холдирования средств) вы не можете предоставить покупателю товар.
+
+Для отмены покупки (холдирования) используйте метод cancelTwoStepPurchase:
+
+RuStoreReactPay.cancelTwoStepPurchase(id)
+  .then(() => {
+    // Process success
+  })
+  .catch((error) => {
+    // Process error
+  });
+
+id — идентификатор покупки.
+Структура результата покупки
+ProductPurchaseResult — результат успешной оплаты цифрового товара (для одностадийной оплаты) или успешного холдирования средств (для двухстадийной оплаты).
+
+interface ProductPurchaseResult {
+  orderId?: string;
+  purchaseId: string;
+  productId: string;
+  invoiceId: string;
+  purchaseType: PurchaseType;
+  productType: ProductType;
+  quantity: number;
+  sandbox: boolean;
+}
+
+ProductPurchaseResult — результат успешной оплаты цифрового товара (для одностадийной оплаты) или успешного холдирования средств (для двухстадийной оплаты).
+
+purchaseId — идентификатор покупки. Используется для получения информации о покупке в SDK методом получения информации о покупке и серверной валидации подписки.
+productId — идентификатор приобретенного продукта, указанный при создании в консоли разработчика RuStore.
+invoiceId — идентификатор счета. Используется для серверной валидации платежа, поиска платежей в консоли разработчика, а также отображается покупателю в истории платежей в мобильном приложении RuStore.
+orderId — уникальный идентификатор оплаты, указанный разработчиком или сформированный автоматически (uuid).
+purchaseType — тип покупки (ONE_STEP/TWO_STEP/UNDEFINED — одностадийная/двухстадийная/стадийность не определена).
+productType — тип продукта (NON_CONSUMABLE_PRODUCT — непотребляемый товар, CONSUMABLE_PRODUCT — потребляемый товар, SUBSCRIPTION — подписка).
+quantity — количество товара, заданное при старте покупки.
+sandbox — флаг, указывающий признак тестового платежа в песочнице. Если true — покупка совершена в режиме тестирования.
+Обработка ошибок
+Если в процессе оплаты возникает ошибка или пользователь отменяет покупку, выполнение метода оплаты (как с выбором типа покупки, так и двухстадийного метода) завершается с ошибкой:
+
+ProductPurchaseException — ошибка покупки продукта.
+ProductPurchaseCancelled — ошибка, вызванная отменой покупки продукта (пользователь закрыл платежную шторку) до получения результата покупки. В таком случае рекомендуется дополнительно проверить статус покупки методом получения информации о покупке.
+Структура ошибки и отмены покупки:
+
+export type ProductPurchase = {
+  purchaseId: string;
+  invoiceId: string;
+  orderId?: string;
+  purchaseType: PurchaseType;
+  status: ProductPurchaseStatus;
+  description: string;
+  purchaseTime?: string;
+  price: number;
+  amountLabel: string;
+  currency: string;
+  developerPayload?: string;
+  sandbox: boolean;
+  productId: string;
+  quantity: number;
+  productType: ProductType;
+};
+
+purchaseId — идентификатор покупки. Используется для получения информации о покупке в SDK методом получения информации о покупке.
+productId — идентификатор приобретенного продукта, указанный при создании в консоли разработчика RuStore.
+invoiceId — идентификатор счета. Используется для серверной валидации платежа, поиска платежей в консоли разработчика, а также отображается покупателю в истории платежей в мобильном приложении RuStore.
+orderId — уникальный идентификатор оплаты, указанный разработчиком или сформированный автоматически (uuid).
+purchaseType — тип покупки (ONE_STEP/TWO_STEP/UNDEFINED — одностадийная/двухстадийная/стадийность не определена).
+productType — тип продукта (NON_CONSUMABLE_PRODUCT — непотребляемый товар, CONSUMABLE_PRODUCT — потребляемый товар, SUBSCRIPTION — подписка).
+quantity — количество товара, заданное при старте покупки.
+Валидация покупки на сервере
+Если вам необходимо произвести валидацию успешной покупки на сервере RuStore, вы можете использовать subscriptionToken в ProductPurchaseResult.SuccessProductPurchaseResult, возвращаемой при успешной покупке продукта.
+
+Если вам необходимо произвести валидацию успешной покупки в RuStore, вы можете использовать публичные API-интерфейсы валидации. Для валидации продуктов и подписок используются разные методы:
+
+Для валидации покупки продукта используйте invoiceId из модели ProductPurchaseResult, возвращаемой после завершения покупки.
+Для валидации покупки подписки используйте purchaseId из модели ProductPurchaseResult, возвращаемой после завершения покупки.
+Тип приобретенного продукта можно определить по данным, полученным в ответе ProductPurchaseResult.
+
+Также можно получить subscriptionToken в сущности Purchase. Сущность Purchase можно получить, используя метод getPurchases().
+
+Получение invoiceId из результата покупки
+// Пример получения invoiceId или purchaseId из результата покупки для валидации на сервере
+const params = {
+  productId: 'productId',
+  preferredPurchaseType: PreferredPurchaseType.twoStep,
+};
+
+RuStoreReactPay.purchase(params)
+  .then((result) => {
+    // result.productType может быть consumable, nonConsumable или subscription
+    if (
+      result.productType === ProductType.consumable ||
+      result.productType === ProductType.nonConsumable
+    ) {
+      const invoiceId = result.invoiceId;
+      yourApi.validateProduct(invoiceId);
+    } else if (result.productType === ProductType.subscription) {
+      const purchaseId = result.purchaseId;
+      yourApi.validateSubscription(purchaseId);
+    } else {
+      // необязательная обработка неопределенного типа
+    }
+  })
+  .catch((error) => {
+    // Обработка ошибок покупки
+  });
+
+
+Получение subscriptionToken из результата покупки
+// Пример получения purchaseId (subscriptionToken) для валидации подписки
+RuStoreReactPay.getPurchases()
+  .then((purchases) => {
+    purchases.forEach((purchase) => {
+      // каждая покупка может быть либо продуктом, либо подпиской
+      const { productPurchase, subscriptionPurchase } = purchase;
+      if (subscriptionPurchase) {
+        const purchaseId = subscriptionPurchase.purchaseId;
+        yourApi.validateSubscription(purchaseId);
+      } else if (productPurchase) {
+        const invoiceId = productPurchase.invoiceId;
+        yourApi.validateProduct(invoiceId);
+      }
+    });
+  })
+  .catch((error) => {
+    // Обработка ошибок
+  });
+
+RuStoreUtils
+RuStoreUtils — это блок в нативном SDK, содержащий набор публичных методов, предназначенных для взаимодействия с приложением RuStore на устройстве пользователя.
+
+Для доступа к методам блока используется синглтон класса RustoreReactPay.
+
+Метод IsRuStoreInstalled проверяет наличие приложения RuStore на устройстве пользователя.
+
+Вызов метода IsRuStoreInstalled
+if (RustoreReactPay.IsRuStoreInstalled()) {
+    // RuStore установлен на устройстве пользователя
+} else {
+    // RuStore не установлен на устройстве пользователя
+}
+
+Метод openRuStoreDownloadInstruction открывает веб-страницу для скачивания мобильного приложения RuStore.
+
+Вызов метода openRuStoreDownloadInstruction
+RustoreReactPay.openRuStoreDownloadInstruction();
+
+Метод openRuStore запускает мобильное приложение RuStore. При вызове данного метода, в случае отсутствия установленного приложения RuStore, будет отображено Toast уведомление с сообщением "Не удалось открыть приложение".
+
+Вызов метода openRuStore
+RustoreReactPay.openRuStore();
+
+Метод openRuStoreAuthorization запускает мобильное приложение RuStore для авторизации. После успешной авторизации пользователя приложение RuStore автоматически закрывается. При вызове данного метода, в случае отсутствия установленного приложения RuStore, будет отображено Toast уведомление с сообщением "Не удалось открыть приложение".
+
+Вызов метода openRuStoreAuthorization
+RustoreReactPay.openRuStoreAuthorization();
+
+Использование RuStoreUtils для проверки платежных сценариев
+
+Кейс применения RuStoreUtils для проверки наличия RuStore на устройстве и работы с авторизацией пользователя рассмотрен в статье Прием платежей без установки RuStore.
+
+В статье приведены:
+
+Сценарии работы с покупками при отсутствии установленного RuStore;
+
+Примеры последовательного вызова методов проверки установки и авторизации через RuStoreUtils;
+
+Особенности поведения SDK в разных условиях (наличие/отсутствие RuStore, авторизация пользователя и др.).
+
+Список ошибок
+RuStorePaymentNetworkException — ошибка сетевого взаимодействия SDK. В модели ошибки возвращается код ошибки (поле code), по которому можно определить причину ошибки. Таблица с кодами ошибок доступна в разделе коды ошибок. Поле message содержит описание причины ошибки.
+
+export type RuStorePayError = {
+  code: RuStoreErrorCode;
+  message: string;
+}
+
+RuStorePaymentNetworkException — ошибка сетевого взаимодействия SDK;
+RuStorePaymentException — базовый класс всех исключений SDK, наследуется от Exception;
+RuStorePayClientAlreadyExist — ошибка повторной инициализации SDK;
+RuStorePayClientNotCreated — попытка обратиться к публичным интерфейсам SDK до момента ее инициализации;
+RuStorePayInvalidActivePurchase — запущен процесс оплаты неизвестного типа продукта;
+RuStorePayInvalidConsoleAppId — не задан обязательный параметр console_application_id для инициализации SDK;
+RuStorePaySignatureException — неверная сигнатура ответа. Возникает при попытке совершить мошеннические действия;
+EmptyPaymentTokenException — ошибка получения платежного токена;
+InvalidCardBindingIdException — ошибка оплаты сохраненной картой;
+ApplicationSchemeWasNotProvided — не указана схема для обратного диплинка;
+ProductPurchaseException - ошибка покупки продукта. Структура модели представлена в разделе структура результата покупки;
+ProductPurchaseCancelled - произошла отмена покупки продукта (пользователь закрыл платежную шторку). Структура модели представлена в разделе структура результата покупки;
+ProductPurchaseException — ошибка покупки продукта;
+RuStoreNotInstalledException — на устройстве пользователя не установлен RuStore;
+RuStoreOutdatedException — установленная на устройстве версия RuStore не поддерживает платежи;
+RuStoreUserUnauthorizedException — пользователь не авторизован в RuStore;
+RuStoreApplicationBannedException — приложение заблокировано в RuStore;
+RuStoreUserBannedException — пользователь заблокирован в RuStore.
+Коды ошибок
+Код ошибки	Описание
+4000001	Запрос сформирован некорректно: отсутствует или неверно заполнен обязательный параметр, неверный формат данных.
+4000002, 4000016, 4040005	Приложение не найдено.
+4000003	Приложение заблокировано.
+4000004	Подпись приложения не совпадает с зарегистрированной.
+4000005	Компания не найдена.
+4000006	Компания заблокирована.
+4000007	Монетизация компании отключена или неактивна.
+4000014	Продукт не найден.
+4000015	Продукт не опубликован.
+4000017	Некорректный параметр quantity.
+4000018	Превышен лимит покупок.
+4000020	Продукт уже приобретен.
+4000021	Незавершенная покупка продукта.
+4000022	Покупка не найдена.
+4000025	Не найден подходящий способ оплаты.
+4000026	Неверный тип покупки для подтверждения (должна быть двухстадийная оплата).
+4000027	Неверный статус покупки для подтверждения.
+4000028	Неверный тип покупки для отмены (должна быть двухстадийная оплата).
+4000029	Неверный статус покупки для отмены.
+4000030	Выписанный токен не соответствует покупаемому товару.
+4000041	У пользователя уже есть активная подписка для данного кода продукта.
+4000045	Превышено максимальное значение размера.
+4010001	Доступ к запрашиваему ресурсу запрещен (неавторизовано).
+4010002	Время жизни токена истекло.
+4010003	Платежный токен невалиден.
+4030001	Не передан платежный токен.
+4030002	Пользователь заблокирован по требованиям безопасности.
+4040002, 4040003, 4040004	Ошибка платежной системы.
+5000***	Внутренняя ошибка.

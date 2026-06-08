@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "Зеркало Судьбы",
+    "slug": "ai-destiny-scanner",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mirodestiny",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0010"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.mirodestiny.app"
+    },
+    "android": {
+      "backgroundColor": "#0A0010",
+      "package": "com.mirodestiny.app"
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-dev-client",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#8B5CF6",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "Зеркало Судьбы"
+        }
+      ],
+      [
+        "./plugins/withYandexAds.js",
+        {
+          "userTrackingUsageDescription": "Разрешите отслеживание, чтобы видеть более релевантную рекламу в приложении."
+        }
+      ],
+      [
+        "./plugins/withRuStore.js",
+        {
+          "consoleAppId": "",
+          "deeplinkScheme": "mirodestiny"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

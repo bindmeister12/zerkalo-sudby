@@ -1,0 +1,44 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_YANDEX_INTERSTITIAL_ID": "",
+        "EXPO_PUBLIC_YANDEX_REWARDED_ID": ""
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "unpack-app.replit.app",
+        "EXPO_PUBLIC_YANDEX_INTERSTITIAL_ID": "",
+        "EXPO_PUBLIC_YANDEX_REWARDED_ID": ""
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "unpack-app.replit.app",
+        "EXPO_PUBLIC_YANDEX_INTERSTITIAL_ID": "",
+        "EXPO_PUBLIC_YANDEX_REWARDED_ID": ""
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
