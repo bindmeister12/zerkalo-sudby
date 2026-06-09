@@ -10,7 +10,8 @@
       "node": "20.0.0",
       "pnpm": "10.0.0",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "image": "latest"
       },
       "ios": {
         "simulator": true
@@ -21,7 +22,8 @@
       "node": "20.0.0",
       "pnpm": "10.0.0",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "image": "latest"
       },
       "env": {
         "EXPO_PUBLIC_DOMAIN": "unpack-app.replit.app"
@@ -31,6 +33,9 @@
       "autoIncrement": true,
       "node": "20.0.0",
       "pnpm": "10.0.0",
+      "android": {
+        "image": "latest"
+      },
       "env": {
         "EXPO_PUBLIC_DOMAIN": "unpack-app.replit.app"
       }
