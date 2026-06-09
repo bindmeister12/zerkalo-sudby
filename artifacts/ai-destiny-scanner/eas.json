@@ -34,6 +34,7 @@
       "node": "20.0.0",
       "pnpm": "10.0.0",
       "android": {
+        "buildType": "apk",
         "image": "latest"
       },
       "env": {
